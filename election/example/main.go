@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -69,7 +70,7 @@ type LeaderData struct {
 	Name string `json:"name"`
 }
 
-func webHandler(res http.ResponseWriter, req *http.Request) {
+func webHandler(res http.ResponseWriter, _ *http.Request) {
 	data, err := json.Marshal(leader)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -78,6 +79,17 @@ func webHandler(res http.ResponseWriter, req *http.Request) {
 	}
 	res.WriteHeader(http.StatusOK)
 	res.Write(data)
+}
+
+func webHealthHandler(res http.ResponseWriter, _ *http.Request) {
+	if leader == nil || leader.Name == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(res, fmt.Sprintf("Invalid leader set: %v", leader))
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
+	io.WriteString(res, fmt.Sprintf("Valid leader set: %v", leader))
 }
 
 func validateFlags() {
@@ -110,6 +122,7 @@ func main() {
 	go election.RunElection(e)
 
 	if len(*addr) > 0 {
+		http.HandleFunc("/health", webHealthHandler)
 		http.HandleFunc("/", webHandler)
 		http.ListenAndServe(*addr, nil)
 	} else {
