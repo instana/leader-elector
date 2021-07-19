@@ -1,0 +1,21 @@
+resources:
+  - name: agent-installer
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/instana/agent-installer.git
+      username: ((nim-gh-token))
+      password: x-oauth-basic
+      branch: ((branch))
+      paths:
+        - leader-elector-assembly/**
+
+jobs:
+  - name: self-update
+    plan:
+      - get: agent-installer
+        trigger: true
+      - set_pipeline: self
+        file: agent-installer/leader-elector-assembly/ci/pipeline.yml
+        vars:
+          branch: ((branch))
