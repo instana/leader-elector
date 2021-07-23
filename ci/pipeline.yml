@@ -52,15 +52,6 @@ resources:
       file: VERSION
       commit_message: Bump the leader-elector version to %version%
 
-  - name: codebuild-project
-    type: codebuild
-    icon: aws
-    source:
-      project: instana-leader-elector-codebuild
-      region: us-west-2
-      access_key_id: ((codebuild-key.key_id))
-      secret_access_key: ((codebuild-key.key_secret))
-
   - name: build-bundle
     type: s3
     icon: zip-disk
@@ -188,15 +179,15 @@ jobs:
             - put: leader-elector-image-amd64
               params:
                   image: codebuild-containers/artifacts/amd64-image.tar
-                  additional_tags: codebuild-amd64/artifacts/amd64-tag
+                  additional_tags: codebuild-containers/artifacts/amd64-tag
             - put: leader-elector-image-arm64
               params:
                   image: codebuild-containers/artifacts/arm64-image.tar
-                  additional_tags: codebuild-arm64/artifacts/arm64-tag
+                  additional_tags: codebuild-containers/artifacts/arm64-tag
             - put: leader-elector-image-s390x
               params:
                   image: codebuild-containers/artifacts/s390x-image.tar
-                  additional_tags: codebuild-s390x/artifacts/s390x-tag
+                  additional_tags: codebuild-containers/artifacts/s390x-tag
 
           #      - put: instana-agent-chart-version
           #        params:
