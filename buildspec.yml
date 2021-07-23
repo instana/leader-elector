@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    DOCKER_CLI_EXPERIMENTAL: enabled
+    DOCKERHUB_USER: _
+    DOCKERHUB_PASSWORD: _
+    ELECTOR_REPOSITORY: gcr.io/instana-agent-qa/leader-elector
+    ELECTOR_VERSION: _
+    COMMIT_SHA: _
+
+phases:
+  build:
+    commands:
+      - export IMAGE_TAG="${ELECTOR_VERSION}-${COMMIT_SHA}"
+      - export DATE=`date`
+      - docker --version
+      - yum -y install qemu-user-static
+      - wget -nv https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
+      - chmod a+x buildx-v0.5.1.linux-amd64
+      - mkdir -p ~/.docker/cli-plugins
+      - mv buildx-v0.5.1.linux-amd64 ~/.docker/cli-plugins/docker-buildx
+      - echo Build started on `date` with tag `echo $IMAGE_TAG`
+      - echo "s390x-${IMAGE_TAG}" > s390x-tag
+      - echo "amd64-${IMAGE_TAG}" > amd64-tag
+      - echo "arm64-${IMAGE_TAG}" > arm64-tag
+      - docker buildx create --name rosetta
+      - docker buildx use rosetta
+      - docker buildx inspect --bootstrap
+      - ELECTOR_VERSION=${IMAGE_TAG} ELECTOR_REPOSITORY=${ELECTOR_REPOSITORY} make build
+      - docker save "${ELECTOR_REPOSITORY}:s390x-${IMAGE_TAG}" > s390x-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:amd64-${IMAGE_TAG}" > amd64-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:arm64-${IMAGE_TAG}" > arm64-image.tar
+artifacts:
+  name: ${IMAGE_TAG}
+  files:
+    - 's390x-tag'
+    - 'amd64-tag'
+    - 'arm64-tag'
+    - 's390x-image.tar'
+    - 'amd64-image.tar'
+    - 'arm64-image.tar'
+

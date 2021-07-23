@@ -1,21 +1,204 @@
+
+---
+
+var:
+  leader-elector-git-repo-config: &leader-elector-git-repo-config
+    uri: https://github.com/instana/leader-elector.git
+    username: ((instanacd-github-api-token))
+    password: x-oauth-basic
+    branch: &build-branch ((branch))
+    git_config:
+      - name: user.name
+        value: &gh-user Stan
+      - name: user.email
+        value: &gh-email stan@instana.com
+
+resource_types:
+
+  - name: slack-notification
+    type: registry-image
+    source:
+      repository: cfcommunity/slack-notification-resource
+      tag: latest
+
+  - name: codebuild
+    type: registry-image
+    source:
+      repository: cedricziel/concourse-codebuild-resource
+      tag: "0.1.14"
+
 resources:
-  - name: agent-installer
+
+  - name: pipeline-source
     type: git
     icon: github
     source:
-      uri: https://github.com/instana/agent-installer.git
-      username: ((nim-gh-token))
-      password: x-oauth-basic
-      branch: ((branch))
+      <<: *leader-elector-git-repo-config
       paths:
-        - leader-elector-assembly/**
+      - ci/
+
+  - name: leader-elector-repository
+    type: git
+    icon: github
+    source:
+      <<: *leader-elector-git-repo-config
+
+  - name: leader-elector-version
+    type: semver
+    icon: alpha
+    source: &leader-elector-version-config
+      <<: *leader-elector-git-repo-config
+      driver: git
+      file: VERSION
+      commit_message: Bump the leader-elector version to %version%
+
+  - name: codebuild-project
+    type: codebuild
+    icon: aws
+    source:
+      project: instana-leader-elector-codebuild
+      region: us-west-2
+      access_key_id: ((codebuild-key.key_id))
+      secret_access_key: ((codebuild-key.key_secret))
+
+  - name: build-bundle
+    type: s3
+    icon: zip-disk
+    source:
+      bucket: instana-agent-leader-elector-codebuild
+      versioned_file: context.zip
+      access_key_id: ((codebuild-key.key_id))
+      secret_access_key: ((codebuild-key.key_secret))
+      region_name: us-west-2
+      skip_download: true
+
+  - name: codebuild-containers
+    type: codebuild
+    icon: aws
+    source:
+      project: instana-leader-elector-codebuild
+      region: us-west-2
+      access_key_id: ((codebuild-key.key_id))
+      secret_access_key: ((codebuild-key.key_secret))
+
+  - name: leader-elector-image-amd64
+    type: registry-image
+    icon: docker
+    source:
+      repository: gcr.io/instana-agent-qa/leader-elector
+      tag: latest-amd64
+      username: _json_key
+      password: ((project-berlin-tests-gcp-instana-qa))
+  - name: leader-elector-image-arm64
+    type: registry-image
+    icon: docker
+    source:
+      repository: gcr.io/instana-agent-qa/leader-elector
+      tag: latest-arm64
+      username: _json_key
+      password: ((project-berlin-tests-gcp-instana-qa))
+  - name: leader-elector-image-s390x
+    type: registry-image
+    icon: docker
+    source:
+      repository: gcr.io/instana-agent-qa/leader-elector
+      tag: latest-s390x
+      username: _json_key
+      password: ((project-berlin-tests-gcp-instana-qa))
+
+
+      #  - name: slack-alert-team-agent
+      #    type: slack-notification
+      #    source:
+      #      url: ((slack-webhook-team-agent.webhoook_url))
 
 jobs:
   - name: self-update
+    max_in_flight: 1
     plan:
-      - get: agent-installer
+      - get: pipeline-source
         trigger: true
       - set_pipeline: self
-        file: agent-installer/leader-elector-assembly/ci/pipeline.yml
+        file: pipeline-source/ci/pipeline.yml
         vars:
           branch: ((branch))
+
+  - name: prepare-build-bundle
+    max_in_flight: 1
+    plan:
+      - get: leader-elector-repository
+      - task: package-build-bundle
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: ubuntu
+              tag: focal
+          inputs:
+            - name: leader-elector-repository
+              path: .
+          run:
+            path: bash
+            args:
+              - -ce
+              - |
+                date
+                apt update
+                apt install -yqq zip unzip tar
+                zip -r target/context.zip .
+          outputs:
+            - name: target
+      - put: build-bundle
+        params:
+          file: target/context.zip
+
+  - name: multiarch-operator-images-build
+    max_in_flight: 1
+    plan:
+      - get: build-bundle
+        trigger: true
+        passed: [ prepare-build-bundle ]
+      - get: leader-elector-repository
+      - get: leader-elector-version
+        params: {bump: patch}
+
+      - load_var: new_leader_elector_version
+        file: leader-elector-version/number
+        reveal: true
+      - load_var: commit-sha
+        file: leader-elector-repository/.git/HEAD
+        reveal: true
+
+      # spin off AWS CloudBuild jobs to build operator
+      # images for the different target platforms:
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - put: codebuild-containers
+              params:
+                source_version: ((.:new_leader_elector_version))
+                env_var_overrides:
+                  ELECTOR_VERSION: ((.:new_leader_elector_version))
+                  COMMIT_SHA: ((.:commit-sha))
+      # upload the AWS CloudBuild built images to GCR:
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - put: leader-elector-image-amd64
+              params:
+                  image: codebuild-containers/artifacts/amd64-image.tar
+                  additional_tags: codebuild-amd64/artifacts/amd64-tag
+            - put: leader-elector-image-arm64
+              params:
+                  image: codebuild-containers/artifacts/arm64-image.tar
+                  additional_tags: codebuild-arm64/artifacts/arm64-tag
+            - put: leader-elector-image-s390x
+              params:
+                  image: codebuild-containers/artifacts/s390x-image.tar
+                  additional_tags: codebuild-s390x/artifacts/s390x-tag
+
+          #      - put: instana-agent-chart-version
+          #        params:
+          #          bump: patch
+
