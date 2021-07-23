@@ -160,6 +160,9 @@ jobs:
       - load_var: commit-sha
         file: leader-elector-repository/.git/HEAD
         reveal: true
+      - load_var: s3-artifact-version
+        file: build-bundle/version
+        reveal: true
 
       # spin off AWS CloudBuild jobs to build operator
       # images for the different target platforms:
@@ -168,7 +171,7 @@ jobs:
           steps:
             - put: codebuild-containers
               params:
-                source_version: ((.:new_leader_elector_version))
+                source_version: ((.:s3-artifact-version))
                 env_var_overrides:
                   ELECTOR_VERSION: ((.:new_leader_elector_version))
                   COMMIT_SHA: ((.:commit-sha))
