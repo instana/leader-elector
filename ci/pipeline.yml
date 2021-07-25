@@ -298,7 +298,8 @@ jobs:
       - put: leader-elector-repository
         params:
           repository: leader-elector-repository
-          tag: VERSION
+          branch: ((.:new_leader_elector_version))
+          tag: leader-elector-repository/VERSION
       - put: slack-alert-team-agent
         params:
           channel: tech-agent-delivery-notifications
