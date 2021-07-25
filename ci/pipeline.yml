@@ -294,6 +294,7 @@ jobs:
                 docker manifest push --purge "containers.instana.io/instana/leader-elector:$VERSION"
 
       - put: leader-elector-version
+        params: {bump: patch}
       - put: leader-elector-repository
         params:
           tag: VERSION
