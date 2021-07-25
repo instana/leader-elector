@@ -297,6 +297,7 @@ jobs:
         params: {bump: patch}
       - put: leader-elector-repository
         params:
+          repository: leader-elector-repository
           tag: VERSION
       - put: slack-alert-team-agent
         params:
