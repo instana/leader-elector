@@ -97,11 +97,10 @@ resources:
       username: _json_key
       password: ((project-berlin-tests-gcp-instana-qa))
 
-
-      #  - name: slack-alert-team-agent
-      #    type: slack-notification
-      #    source:
-      #      url: ((slack-webhook-team-agent.webhoook_url))
+  - name: slack-alert-team-agent
+    type: slack-notification
+    source:
+      url: ((slack-webhook-team-agent.webhoook_url))
 
 jobs:
   - name: self-update
@@ -144,7 +143,7 @@ jobs:
         params:
           file: target/context.zip
 
-  - name: multiarch-operator-images-build
+  - name: multiarch-leader-elector-images-build
     max_in_flight: 1
     plan:
       - get: build-bundle
@@ -192,7 +191,114 @@ jobs:
                   image: codebuild-containers/artifacts/s390x-image.tar
                   additional_tags: codebuild-containers/artifacts/s390x-tag
 
-          #      - put: instana-agent-chart-version
-          #        params:
-          #          bump: patch
+  - name: multiarch-leader-elector-manifest-publish
+    max_in_flight: 1
+    plan:
+      - get: leader-elector-repository
+        trigger: true
+        passed: [ multiarch-leader-elector-images-build ]
+      - get: leader-elector-version
+        params: {bump: patch}
+      - get: leader-elector-image-amd64
+        params: { skip_download: true }
+        passed: [ multiarch-leader-elector-images-build ]
+      - get: leader-elector-image-arm64
+        params: { skip_download: true }
+        passed: [ multiarch-leader-elector-images-build ]
+      - get: leader-elector-image-s390x
+        params: { skip_download: true }
+        passed: [ multiarch-leader-elector-images-build ]
+
+      - load_var: new_leader_elector_version
+        file: leader-elector-version/number
+        reveal: true
+      - load_var: commit-sha
+        file: leader-elector-repository/.git/HEAD
+        reveal: true
+
+      - task: build-multiarch-manifest
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: karlkfi/concourse-dcind
+          inputs:
+            - name: leader-elector-repository
+          outputs:
+            - name: message
+          params:
+            DOCKER_CLI_EXPERIMENTAL: enabled
+            COMMIT_SHA: ((.:commit-sha))
+            VERSION: ((.:new_leader_elector_version))
+            JSON_KEY: ((project-berlin-tests-gcp-instana-qa))
+            DOCKER_HUB_PASSWORD: ((dockerhub-instanacicd.password))
+            DOCKER_HUB_USERNAME: ((dockerhub-instanacicd.user))
+          run:
+            path: entrypoint.sh
+            args:
+              - bash
+              - -ceu
+              - |
+                set -e
+                echo $JSON_KEY > key.json
+                cat key.json | docker login -u _json_key --password-stdin https://gcr.io
+                echo "((containers-instana-io-creds.password))" | docker login -u ((containers-instana-io-creds.username)) --password-stdin https://containers.instana.io
+                echo "$DOCKER_HUB_PASSWORD" | docker login -u $DOCKER_HUB_USERNAME --password-stdin https://index.docker.io/v1/
+
+                echo "---> Pulling source containers"
+                docker pull "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-amd64"
+                docker pull "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-s390x"
+                docker pull "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-arm64"
+
+
+                echo "---> **** Public release, publishing to docker hub & Containers.instana.io registry. ****"
+
+                echo "---> re-tagging images for docker.io"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-amd64" "docker.io/instana/leader-elector:amd64-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-s390x" "docker.io/instana/leader-elector:s390x-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-arm64" "docker.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> pushing images to docker.io"
+                docker push "docker.io/instana/leader-elector:amd64-$VERSION"
+                docker push "docker.io/instana/leader-elector:s390x-$VERSION"
+                docker push "docker.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> Building multi-architectural manifest on docker.io"
+                docker manifest create "docker.io/instana/leader-elector:$VERSION" \
+                  --amend "docker.io/instana/leader-elector:amd64-$VERSION" \
+                  --amend "docker.io/instana/leader-elector:s390x-$VERSION" \
+                  --amend "docker.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> Pushing multi-architectural manifest to docker.io"
+                docker manifest push --purge "docker.io/instana/leader-elector:$VERSION"
+
+                echo "---> re-tagging images for containers.instana.io"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-amd64" "containers.instana.io/instana/leader-elector:amd64-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-s390x" "containers.instana.io/instana/leader-elector:s390x-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-arm64" "containers.instana.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> pushing images to containers.instana.io"
+                docker push "containers.instana.io/instana/leader-elector:amd64-$VERSION"
+                docker push "containers.instana.io/instana/leader-elector:s390x-$VERSION"
+                docker push "containers.instana.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> Building multi-architectural manifest on containers.instana.io"
+                docker manifest create "containers.instana.io/instana/leader-elector:$VERSION" \
+                  --amend "containers.instana.io/instana/leader-elector:amd64-$VERSION" \
+                  --amend "containers.instana.io/instana/leader-elector:s390x-$VERSION" \
+                  --amend "containers.instana.io/instana/leader-elector:arm64-$VERSION"
+
+                echo "---> Pushing multi-architectural manifest to containers.instana.io"
+                docker manifest push --purge "containers.instana.io/instana/leader-elector:$VERSION"
+
+      - put: leader-elector-version
+      - put: leader-elector-repository
+        params:
+          tag: VERSION
+      - put: slack-alert-team-agent
+        params:
+          channel: tech-agent-delivery-notifications
+          text: New version of the Leader Elector image; ((.:new_leader_elector_version)) released!
 

@@ -28,9 +28,9 @@ phases:
       - docker buildx use rosetta
       - docker buildx inspect --bootstrap
       - ELECTOR_VERSION=${IMAGE_TAG} ELECTOR_REPOSITORY=${ELECTOR_REPOSITORY} make build
-      - docker save "${ELECTOR_REPOSITORY}:${IMAGE_TAG}-s390x" > s390x-image.tar
-      - docker save "${ELECTOR_REPOSITORY}:${IMAGE_TAG}-amd64" > amd64-image.tar
-      - docker save "${ELECTOR_REPOSITORY}:${IMAGE_TAG}-arm64" > arm64-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:s390x-${IMAGE_TAG}" > s390x-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:amd64-${IMAGE_TAG}" > amd64-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:arm64-${IMAGE_TAG}" > arm64-image.tar
 artifacts:
   name: ${IMAGE_TAG}
   files:
