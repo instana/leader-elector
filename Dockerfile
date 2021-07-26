@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/ubi-minimal:latest AS elector-builder
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/ubi-minimal:latest AS go-builder
 
 ENV PATH="$PATH:/usr/local/go/bin" \
     GOPATH=/go \
@@ -14,39 +14,35 @@ RUN microdnf install git tar gzip \
     && mkdir -p "${GOPATH}" \
     && go version
 
+
+FROM --platform=linux/amd64 go-builder AS elector-builder
+
+ARG TARGETPLATFORM='linux/amd64'
+
 ADD election /go/src/k8s.io/contrib/election
 
 RUN cd /go/src/k8s.io/contrib/election \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=s390x GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o leader-elector_s390x example/main.go \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o leader-elector_amd64 example/main.go \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o leader-elector_arm64 example/main.go \
-    && mkdir -p /usr/bin/linux/{amd64,arm64,s390x} \
+    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; esac) \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o leader-elector_${ARCH} example/main.go \
+    && mkdir -p /usr/bin/linux/${ARCH} \
     && chmod u+x leader-elector_* && \
-    cp leader-elector_amd64 /usr/bin/linux/amd64/leader-elector && \
-    cp leader-elector_arm64 /usr/bin/linux/arm64/leader-elector && \
-    cp leader-elector_s390x /usr/bin/linux/s390x/leader-elector
+    cp leader-elector_${ARCH} /usr/bin/linux/${ARCH}/leader-elector
 
 
-FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/ubi-minimal:latest AS hostname-builder
+FROM --platform=linux/amd64 go-builder AS hostname-builder
 
-RUN microdnf install golang git \
-    && mkdir -p /go
-
-ENV GOPATH=/go
+ARG TARGETPLATFORM='linux/amd64'
 
 WORKDIR /go/src/hostname
 
 COPY hostname.go .
 
 RUN cd /go/src/hostname \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=s390x GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o hostname_s390x hostname.go \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o hostname_amd64 hostname.go \
-    && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o hostname_arm64 hostname.go \
-    && mkdir -p /usr/bin/linux/{amd64,arm64,s390x} \
+    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; esac) \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o hostname_${ARCH} hostname.go \
+    && mkdir -p /usr/bin/linux/${ARCH} \
     && chmod u+x hostname_* && \
-    cp hostname_amd64 /usr/bin/linux/amd64/hostname && \
-    cp hostname_arm64 /usr/bin/linux/arm64/hostname && \
-    cp hostname_s390x /usr/bin/linux/s390x/hostname
+    cp hostname_${ARCH} /usr/bin/linux/${ARCH}/hostname
 
 
 # Debug image includes busybox which provides a shell otherwise the containers the same.

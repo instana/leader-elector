@@ -299,6 +299,7 @@ jobs:
         params:
           repository: leader-elector-repository
           tag: leader-elector-version/number
+          only_tag: true
       - put: slack-alert-team-agent
         params:
           channel: tech-agent-delivery-notifications
