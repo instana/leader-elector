@@ -49,8 +49,8 @@ resources:
     source: &leader-elector-version-config
       <<: *leader-elector-git-repo-config
       driver: git
-      file: VERSION
-      commit_message: Bump the leader-elector version to %version%
+      file: NEXT_VERSION
+      commit_message: Bump the NEXT leader-elector version to %version%
 
   - name: build-bundle
     type: s3
@@ -151,7 +151,6 @@ jobs:
         passed: [ prepare-build-bundle ]
       - get: leader-elector-repository
       - get: leader-elector-version
-        params: {bump: patch}
 
       - load_var: new_leader_elector_version
         file: leader-elector-version/number
@@ -198,7 +197,6 @@ jobs:
         trigger: true
         passed: [ multiarch-leader-elector-images-build ]
       - get: leader-elector-version
-        params: {bump: patch}
       - get: leader-elector-image-amd64
         params: { skip_download: true }
         passed: [ multiarch-leader-elector-images-build ]
@@ -293,13 +291,13 @@ jobs:
                 echo "---> Pushing multi-architectural manifest to containers.instana.io"
                 docker manifest push --purge "containers.instana.io/instana/leader-elector:$VERSION"
 
-      - put: leader-elector-version
-        params: {bump: patch}
       - put: leader-elector-repository
         params:
           repository: leader-elector-repository
-          tag: leader-elector-version/number
+          tag: leader-elector-repository/NEXT_VERSION
           only_tag: true
+      - put: leader-elector-version
+        params: {bump: patch}
       - put: slack-alert-team-agent
         params:
           channel: tech-agent-delivery-notifications
