@@ -24,6 +24,7 @@ phases:
       - echo "${IMAGE_TAG}-s390x" > s390x-tag
       - echo "${IMAGE_TAG}-amd64" > amd64-tag
       - echo "${IMAGE_TAG}-arm64" > arm64-tag
+      - echo "${IMAGE_TAG}-ppc64le" > ppc64le-tag
       - docker buildx create --name rosetta
       - docker buildx use rosetta
       - docker buildx inspect --bootstrap
@@ -31,13 +32,16 @@ phases:
       - docker save "${ELECTOR_REPOSITORY}:s390x-${IMAGE_TAG}" > s390x-image.tar
       - docker save "${ELECTOR_REPOSITORY}:amd64-${IMAGE_TAG}" > amd64-image.tar
       - docker save "${ELECTOR_REPOSITORY}:arm64-${IMAGE_TAG}" > arm64-image.tar
+      - docker save "${ELECTOR_REPOSITORY}:ppc64le-${IMAGE_TAG}" > ppc64le-image.tar
 artifacts:
   name: ${IMAGE_TAG}
   files:
     - 's390x-tag'
     - 'amd64-tag'
     - 'arm64-tag'
+    - 'ppc64le-tag'
     - 's390x-image.tar'
     - 'amd64-image.tar'
     - 'arm64-image.tar'
+    - 'ppc64le-image.tar'
 
