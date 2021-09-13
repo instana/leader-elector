@@ -38,7 +38,7 @@ WORKDIR /go/src/hostname
 COPY hostname.go .
 
 RUN cd /go/src/hostname \
-    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; esac) \
+    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; 'linux/ppc64le') echo 'ppc64le' ;; esac) \
     && CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o hostname_${ARCH} hostname.go \
     && mkdir -p /usr/bin/linux/${ARCH} \
     && chmod u+x hostname_* && \
