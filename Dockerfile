@@ -22,7 +22,7 @@ ARG TARGETPLATFORM='linux/amd64'
 ADD election /go/src/k8s.io/contrib/election
 
 RUN cd /go/src/k8s.io/contrib/election \
-    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; esac) \
+    && export ARCH=$(case "${TARGETPLATFORM}" in 'linux/amd64') echo 'amd64' ;; 'linux/arm64') echo 'arm64' ;; 'linux/s390x') echo 's390x' ;; 'linux/ppc64le') echo 'ppc64le' ;; esac) \
     && CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=off go build -a -installsuffix cgo -ldflags '-w' -o leader-elector_${ARCH} example/main.go \
     && mkdir -p /usr/bin/linux/${ARCH} \
     && chmod u+x leader-elector_* && \
