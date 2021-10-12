@@ -112,7 +112,7 @@ func main() {
 
 	fn := func(str string) {
 		leader.Name = str
-		fmt.Printf("%s is the leader\n", leader.Name)
+		glog.V(3).Infof("%s is the leader\n", leader.Name)
 	}
 
 	e, err := election.NewElection(*name, *id, *namespace, *ttl, fn, kubeClient)
