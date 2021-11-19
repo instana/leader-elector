@@ -292,26 +292,26 @@ jobs:
                 docker manifest push --purge "docker.io/instana/leader-elector:$VERSION"
 
                 echo "---> re-tagging images for containers.instana.io"
-                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-amd64" "containers.instana.io/instana/leader-elector:amd64-$VERSION"
-                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-s390x" "containers.instana.io/instana/leader-elector:s390x-$VERSION"
-                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-arm64" "containers.instana.io/instana/leader-elector:arm64-$VERSION"
-                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-ppc64le" "containers.instana.io/instana/leader-elector:ppc64le-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-amd64" "containers.instana.io/instana/release/agent/leader-elector:amd64-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-s390x" "containers.instana.io/instana/release/agent/leader-elector:s390x-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-arm64" "containers.instana.io/instana/release/agent/leader-elector:arm64-$VERSION"
+                docker tag "gcr.io/instana-agent-qa/leader-elector:$VERSION-$COMMIT_SHA-ppc64le" "containers.instana.io/instana/release/agent/leader-elector:ppc64le-$VERSION"
 
                 echo "---> pushing images to containers.instana.io"
-                docker push "containers.instana.io/instana/leader-elector:amd64-$VERSION"
-                docker push "containers.instana.io/instana/leader-elector:s390x-$VERSION"
-                docker push "containers.instana.io/instana/leader-elector:arm64-$VERSION"
-                docker push "containers.instana.io/instana/leader-elector:ppc64le-$VERSION"
+                docker push "containers.instana.io/instana/release/agent/leader-elector:amd64-$VERSION"
+                docker push "containers.instana.io/instana/release/agent/leader-elector:s390x-$VERSION"
+                docker push "containers.instana.io/instana/release/agent/leader-elector:arm64-$VERSION"
+                docker push "containers.instana.io/instana/release/agent/leader-elector:ppc64le-$VERSION"
 
                 echo "---> Building multi-architectural manifest on containers.instana.io"
-                docker manifest create "containers.instana.io/instana/leader-elector:$VERSION" \
-                  --amend "containers.instana.io/instana/leader-elector:amd64-$VERSION" \
-                  --amend "containers.instana.io/instana/leader-elector:s390x-$VERSION" \
-                  --amend "containers.instana.io/instana/leader-elector:arm64-$VERSION" \
-                  --amend "containers.instana.io/instana/leader-elector:ppc64le-$VERSION"
+                docker manifest create "containers.instana.io/instana/release/agent/leader-elector:$VERSION" \
+                  --amend "containers.instana.io/instana/release/agent/leader-elector:amd64-$VERSION" \
+                  --amend "containers.instana.io/instana/release/agent/leader-elector:s390x-$VERSION" \
+                  --amend "containers.instana.io/instana/release/agent/leader-elector:arm64-$VERSION" \
+                  --amend "containers.instana.io/instana/release/agent/leader-elector:ppc64le-$VERSION"
 
                 echo "---> Pushing multi-architectural manifest to containers.instana.io"
-                docker manifest push --purge "containers.instana.io/instana/leader-elector:$VERSION"
+                docker manifest push --purge "containers.instana.io/instana/release/agent/leader-elector:$VERSION"
 
       - put: leader-elector-repository
         params:
