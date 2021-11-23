@@ -20,7 +20,7 @@ run:
   - -exc
   - |
       set -e
-      cat "${VERSION}-amd64"   > version/tag-amd64
-      cat "${VERSION}-arm64"   > version/tag-arm64
-      cat "${VERSION}-s390x"   > version/tag-s390x
-      cat "${VERSION}-ppcle64" > version/tag-ppc64le
+      echo "${VERSION}-amd64"   > version/tag-amd64
+      echo "${VERSION}-arm64"   > version/tag-arm64
+      echo "${VERSION}-s390x"   > version/tag-s390x
+      echo "${VERSION}-ppcle64" > version/tag-ppc64le
