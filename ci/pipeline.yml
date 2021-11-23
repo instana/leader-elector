@@ -119,17 +119,17 @@ resources:
 # Public images #######
 #######################
 # containers.instana.io
-  # - name: leader-elector-instana
-  #   type: registry-image
-  #   icon: docker
-  #   source: &containers-instana-io
-  #     repository: containers.instana.io/instana/release/agent/leader-elector
-  #     username: ((containers-instana-io-creds.username))
-  #     password: ((containers-instana-io-creds.password))
-  # - name: manifest-instana
-  #   type: docker-manifest
-  #   icon: docker
-  #   source: *containers-instana-io
+  - name: leader-elector-instana
+    type: registry-image
+    icon: docker
+    source: &containers-instana-io
+      repository: containers.instana.io/instana/release/agent/leader-elector
+      username: ((containers-instana-io-creds.username))
+      password: ((containers-instana-io-creds.password))
+  - name: manifest-instana
+    type: docker-manifest
+    icon: docker
+    source: *containers-instana-io
 
 # icr.io ##############
   - name: leader-elector-icr
@@ -144,17 +144,17 @@ resources:
     icon: docker
     source: *icr-io
 # docker.io ###########
-  # - name: leader-elector-docker
-  #   type: registry-image
-  #   icon: docker
-  #   source: &docker
-  #     repository: docker.io/instana/leader-elector
-  #     username: ((dockerhub-instanacicd.user))
-  #     password: ((dockerhub-instanacicd.password))
-  # - name: manifest-docker
-  #   type: docker-manifest
-  #   icon: docker
-  #   source: *docker
+  - name: leader-elector-docker
+    type: registry-image
+    icon: docker
+    source: &docker
+      repository: docker.io/instana/leader-elector
+      username: ((dockerhub-instanacicd.user))
+      password: ((dockerhub-instanacicd.password))
+  - name: manifest-docker
+    type: docker-manifest
+    icon: docker
+    source: *docker
 
 ############
 ### Jobs ###
@@ -288,39 +288,39 @@ jobs:
         vars:
           version: ((.:new_leader_elector_version))
 
-      # - in_parallel:
-      #   - put: leader-elector-instana
-      #     params:
-      #       image: leader-elector-image-amd64/image.tar
-      #       additional_tags: version/tag-amd64
-      #   - put: leader-elector-instana
-      #     params:
-      #       image: leader-elector-image-arm64/image.tar
-      #       additional_tags: version/tag-arm64
-      #   - put: leader-elector-instana
-      #     params:
-      #       image: leader-elector-image-s390x/image.tar
-      #       additional_tags: version/tag-s390x
-      #   - put: leader-elector-instana
-      #     params:
-      #       image: leader-elector-image-ppc64le/image.tar
-      #       additional_tags: version/tag-ppc64le
-      # - put: manifest-instana
-      #   params:
-      #     tag_file: leader-elector-version/number
-      #     manifests:
-      #       - arch: amd64
-      #         os: linux
-      #         digest_file: leader-elector-image-amd64/digest
-      #       - arch: arm64
-      #         os: linux
-      #         digest_file: leader-elector-image-arm64/digest
-      #       - arch: s390x
-      #         os: linux
-      #         digest_file: leader-elector-image-s390x/digest
-      #       - arch: ppc64le
-      #         os: linux
-      #         digest_file: leader-elector-image-ppc64le/digest
+      - in_parallel:
+        - put: leader-elector-instana
+          params:
+            image: leader-elector-image-amd64/image.tar
+            additional_tags: version/tag-amd64
+        - put: leader-elector-instana
+          params:
+            image: leader-elector-image-arm64/image.tar
+            additional_tags: version/tag-arm64
+        - put: leader-elector-instana
+          params:
+            image: leader-elector-image-s390x/image.tar
+            additional_tags: version/tag-s390x
+        - put: leader-elector-instana
+          params:
+            image: leader-elector-image-ppc64le/image.tar
+            additional_tags: version/tag-ppc64le
+      - put: manifest-instana
+        params:
+          tag_file: leader-elector-version/number
+          manifests:
+            - arch: amd64
+              os: linux
+              digest_file: leader-elector-image-amd64/digest
+            - arch: arm64
+              os: linux
+              digest_file: leader-elector-image-arm64/digest
+            - arch: s390x
+              os: linux
+              digest_file: leader-elector-image-s390x/digest
+            - arch: ppc64le
+              os: linux
+              digest_file: leader-elector-image-ppc64le/digest
 
       - in_parallel:
         - put: leader-elector-icr
@@ -356,39 +356,39 @@ jobs:
               os: linux
               digest_file: leader-elector-image-ppc64le/digest
 
-      # - in_parallel:
-      #   - put: leader-elector-docker
-      #     params:
-      #       image: leader-elector-image-amd64/image.tar
-      #       additional_tags: version/tag-amd64
-      #   - put: leader-elector-docker
-      #     params:
-      #       image: leader-elector-image-arm64/image.tar
-      #       additional_tags: version/tag-arm64
-      #   - put: leader-elector-docker
-      #     params:
-      #       image: leader-elector-image-s390x/image.tar
-      #       additional_tags: version/tag-s390x
-      #   - put: leader-elector-docker
-      #     params:
-      #       image: leader-elector-image-ppc64le/image.tar
-      #       additional_tags: version/tag-ppc64le
-      # - put: manifest-docker
-      #   params:
-      #     tag_file: leader-elector-version/number
-      #     manifests:
-      #       - arch: amd64
-      #         os: linux
-      #         digest_file: leader-elector-image-amd64/digest
-      #       - arch: arm64
-      #         os: linux
-      #         digest_file: leader-elector-image-arm64/digest
-      #       - arch: s390x
-      #         os: linux
-      #         digest_file: leader-elector-image-s390x/digest
-      #       - arch: ppc64le
-      #         os: linux
-      #         digest_file: leader-elector-image-ppc64le/digest
+      - in_parallel:
+        - put: leader-elector-docker
+          params:
+            image: leader-elector-image-amd64/image.tar
+            additional_tags: version/tag-amd64
+        - put: leader-elector-docker
+          params:
+            image: leader-elector-image-arm64/image.tar
+            additional_tags: version/tag-arm64
+        - put: leader-elector-docker
+          params:
+            image: leader-elector-image-s390x/image.tar
+            additional_tags: version/tag-s390x
+        - put: leader-elector-docker
+          params:
+            image: leader-elector-image-ppc64le/image.tar
+            additional_tags: version/tag-ppc64le
+      - put: manifest-docker
+        params:
+          tag_file: leader-elector-version/number
+          manifests:
+            - arch: amd64
+              os: linux
+              digest_file: leader-elector-image-amd64/digest
+            - arch: arm64
+              os: linux
+              digest_file: leader-elector-image-arm64/digest
+            - arch: s390x
+              os: linux
+              digest_file: leader-elector-image-s390x/digest
+            - arch: ppc64le
+              os: linux
+              digest_file: leader-elector-image-ppc64le/digest
 
       - put: leader-elector-repository
         params:
