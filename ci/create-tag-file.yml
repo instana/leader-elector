@@ -1,0 +1,26 @@
+---
+#
+# (c) Copyright IBM Corp. 2021
+# (c) Copyright Instana Inc.
+#
+
+# see https://concourse-ci.org/tasks.html
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    repository: registry.access.redhat.com/ubi8/ubi
+outputs:
+  - name: version
+params:
+  VERSION: ((version))
+run:
+  path: /bin/bash
+  args:
+  - -exc
+  - |
+      set -e
+      echo "${VERSION}-amd64"   > version/tag-amd64
+      echo "${VERSION}-arm64"   > version/tag-arm64
+      echo "${VERSION}-s390x"   > version/tag-s390x
+      echo "${VERSION}-ppcle64" > version/tag-ppc64le
