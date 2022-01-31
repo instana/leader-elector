@@ -403,6 +403,9 @@ func init() {
 	flag.Var(&logging.vmodule, "vmodule", "comma-separated list of pattern=N settings for file-filtered logging")
 	flag.Var(&logging.traceLocation, "log_backtrace_at", "when logging hits line file:N, emit a stack trace")
 
+
+	fmt.Printf("==> glog vmodule: %s", logging.vmodule)
+
 	// Default stderrThreshold is ERROR.
 	logging.stderrThreshold = errorLog
 
@@ -1044,6 +1047,18 @@ func (v Verbose) Infof(format string, args ...interface{}) {
 	if v {
 		logging.printf(infoLog, format, args...)
 	}
+}
+
+func GetVmodule() string {
+	var sb strings.Builder
+	for _, spec := range logging.vmodule.filter {
+		sb.WriteString(spec.pattern)
+		sb.WriteString("=")
+		sb.WriteString(spec.level.String())
+		sb.WriteString(",")
+	}
+
+	return sb.String();
 }
 
 // Info logs to the INFO log.

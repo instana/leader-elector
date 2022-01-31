@@ -105,6 +105,25 @@ func main() {
 	flags.Parse(os.Args)
 	validateFlags()
 
+	// Pass on the -vmodule flag to GLOG
+	env, exists := os.LookupEnv("GLOG_vmodule")
+	if exists {
+		// Ugly, but first reset the flags that will be parsed by glog (otherwise trips over unknown ones)
+		// Then add the "vmodule" flag
+		//flag.Set("vmodule", env)
+		arguments := make([]string, 1)
+		arguments[0] = fmt.Sprintf("--vmodule=%s", env)
+
+		flag.CommandLine.Parse(arguments)
+		//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		// And parse to process correctly
+		//flag.Parse()
+	}
+
+	fmt.Printf("==> ENV glog vmodule: %s", os.Getenv("GLOG_vmodule"))
+	glog.Errorf("==> ENV glog vmodule: %s", os.Getenv("GLOG_vmodule"))
+	glog.Errorf("==> Actual glog vmodule: %s", glog.GetVmodule())
+
 	kubeClient, err := makeClient()
 	if err != nil {
 		glog.Fatalf("error connecting to the client: %v", err)
