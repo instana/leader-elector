@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 	election "k8s.io/contrib/election/lib"
 
 	"github.com/golang/glog"
-	flag "github.com/spf13/pflag"
+	"github.com/spf13/pflag"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/restclient"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
@@ -35,15 +36,15 @@ import (
 )
 
 var (
-	flags = flag.NewFlagSet(
+	pflags = pflag.NewFlagSet(
 		`elector --election=<name>`,
-		flag.ExitOnError)
-	name      = flags.String("election", "", "The name of the election")
-	id        = flags.String("id", "", "The id of this participant")
-	namespace = flags.String("election-namespace", api.NamespaceDefault, "The Kubernetes namespace for this election")
-	ttl       = flags.Duration("ttl", 10*time.Second, "The TTL for this election")
-	inCluster = flags.Bool("use-cluster-credentials", false, "Should this request use cluster credentials?")
-	addr      = flags.String("http", "", "If non-empty, stand up a simple webserver that reports the leader state")
+		pflag.ExitOnError)
+	name      = pflags.String("election", "", "The name of the election")
+	id        = pflags.String("id", "", "The id of this participant")
+	namespace = pflags.String("election-namespace", api.NamespaceDefault, "The Kubernetes namespace for this election")
+	ttl       = pflags.Duration("ttl", 10*time.Second, "The TTL for this election")
+	inCluster = pflags.Bool("use-cluster-credentials", false, "Should this request use cluster credentials?")
+	addr      = pflags.String("http", "", "If non-empty, stand up a simple webserver that reports the leader state")
 
 	leader = &LeaderData{}
 )
@@ -57,7 +58,7 @@ func makeClient() (*client.Client, error) {
 			return nil, err
 		}
 	} else {
-		clientConfig := kubectl_util.DefaultClientConfig(flags)
+		clientConfig := kubectl_util.DefaultClientConfig(pflags)
 		if cfg, err = clientConfig.ClientConfig(); err != nil {
 			return nil, err
 		}
@@ -73,6 +74,7 @@ type LeaderData struct {
 func webHandler(res http.ResponseWriter, _ *http.Request) {
 	data, err := json.Marshal(leader)
 	if err != nil {
+		glog.V(4).Infof("Could not marshal leader: %s", leader)
 		res.WriteHeader(http.StatusInternalServerError)
 		res.Write([]byte(err.Error()))
 		return
@@ -83,13 +85,21 @@ func webHandler(res http.ResponseWriter, _ *http.Request) {
 
 func webHealthHandler(res http.ResponseWriter, _ *http.Request) {
 	if leader == nil || leader.Name == "" {
+		glog.V(4).Info("Invalid leader")
 		res.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(res, fmt.Sprintf("Invalid leader set: %v", leader))
+		_, err := io.WriteString(res, "Invalid leader")
+		if err != nil {
+			glog.Errorf("Could not write the response: %v", err)
+		}
 		return
 	}
 
+	glog.V(4).Infof("Valid leader set with name: %s", leader.Name)
 	res.WriteHeader(http.StatusOK)
-	io.WriteString(res, fmt.Sprintf("Valid leader set: %v", leader))
+	_, err := io.WriteString(res, fmt.Sprintf("Valid leader set: %v", leader))
+	if err != nil {
+		glog.Errorf("Could not write the response: %v", err)
+	}
 }
 
 func validateFlags() {
@@ -102,27 +112,30 @@ func validateFlags() {
 }
 
 func main() {
-	flags.Parse(os.Args)
+	err := pflags.Parse(os.Args)
+	if err != nil {
+		glog.Errorf("Could not parse OS arguments: %s", os.Args)
+		return
+	}
 	validateFlags()
 
-	// Pass on the -vmodule flag to GLOG
 	env, exists := os.LookupEnv("GLOG_vmodule")
 	if exists {
-		// Ugly, but first reset the flags that will be parsed by glog (otherwise trips over unknown ones)
-		// Then add the "vmodule" flag
-		//flag.Set("vmodule", env)
-		arguments := make([]string, 1)
-		arguments[0] = fmt.Sprintf("--vmodule=%s", env)
-
-		flag.CommandLine.Parse(arguments)
-		//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-		// And parse to process correctly
-		//flag.Parse()
+		glog.Infof("Environment variable GLOG_vmodule is set to: %s", env)
+		err := flag.Set("vmodule", env)
+		if err != nil {
+			glog.Errorf("Could not set vmodule=%s", env, err)
+		}
 	}
 
-	fmt.Printf("==> ENV glog vmodule: %s", os.Getenv("GLOG_vmodule"))
-	glog.Errorf("==> ENV glog vmodule: %s", os.Getenv("GLOG_vmodule"))
-	glog.Errorf("==> Actual glog vmodule: %s", glog.GetVmodule())
+	env, exists = os.LookupEnv("GLOG_v")
+	if exists {
+		glog.Infof("Environment variable GLOG_v is set to: %s", env)
+		err := flag.Set("v", env)
+		if err != nil {
+			glog.Errorf("Could not set v=%s", env, err)
+		}
+	}
 
 	kubeClient, err := makeClient()
 	if err != nil {

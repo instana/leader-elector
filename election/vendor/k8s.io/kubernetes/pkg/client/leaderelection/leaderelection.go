@@ -211,7 +211,7 @@ func (le *LeaderElector) acquire() {
 			time.Sleep(wait.Jitter(le.config.RetryPeriod, JitterFactor))
 			return
 		}
-		le.config.EventRecorder.Eventf(&api.Endpoints{ObjectMeta: le.config.EndpointsMeta}, api.EventTypeNormal, "%v became leader", le.config.Identity)
+		le.config.EventRecorder.Eventf(&api.Endpoints{ObjectMeta: le.config.EndpointsMeta}, api.EventTypeNormal, "StartLeading","%v became leader", le.config.Identity)
 		glog.Infof("sucessfully acquired lease %v/%v", le.config.EndpointsMeta.Namespace, le.config.EndpointsMeta.Name)
 		close(stop)
 	}, 0, stop)
@@ -229,7 +229,7 @@ func (le *LeaderElector) renew() {
 			glog.V(4).Infof("succesfully renewed lease %v/%v", le.config.EndpointsMeta.Namespace, le.config.EndpointsMeta.Name)
 			return
 		}
-		le.config.EventRecorder.Eventf(&api.Endpoints{ObjectMeta: le.config.EndpointsMeta}, api.EventTypeNormal, "%v stopped leading", le.config.Identity)
+		le.config.EventRecorder.Eventf(&api.Endpoints{ObjectMeta: le.config.EndpointsMeta}, api.EventTypeNormal, "StopLeading", "%v stopped leading", le.config.Identity)
 		glog.Infof("failed to renew lease %v/%v", le.config.EndpointsMeta.Namespace, le.config.EndpointsMeta.Name)
 		close(stop)
 	}, 0, stop)
@@ -293,7 +293,7 @@ func (le *LeaderElector) tryAcquireOrRenew() bool {
 		}
 		if le.observedTime.Add(le.config.LeaseDuration).After(now.Time) &&
 			oldLeaderElectionRecord.HolderIdentity != le.config.Identity {
-			glog.V(2).Infof("lock is held by %v and has not yet expired", oldLeaderElectionRecord.HolderIdentity)
+			glog.V(4).Infof("lock is held by %v and has not yet expired", oldLeaderElectionRecord.HolderIdentity)
 			return false
 		}
 	}
