@@ -1045,7 +1045,6 @@ func (v Verbose) Infof(format string, args ...interface{}) {
 		logging.printf(infoLog, format, args...)
 	}
 }
-
 // Info logs to the INFO log.
 // Arguments are handled in the manner of fmt.Print; a newline is appended if missing.
 func Info(args ...interface{}) {
