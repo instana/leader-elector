@@ -53,14 +53,13 @@ ARG TARGETPLATFORM='linux/amd64'
 
 MAINTAINER Instana Engineering <support@instana.com>
 
-# Docker defaults to /bin/sh need to override to use busybox shell.
-SHELL ["/busybox/sh", "-c"]
-
 COPY --from=hostname-builder /usr/bin/${TARGETPLATFORM}/hostname /app/hostname
 COPY --from=elector-builder /usr/bin/${TARGETPLATFORM}/leader-elector /app/server
+
+COPY start.sh /
 
 # Limit continuous logging of the lease on INFO level
 ENV GLOG_vmodule="leaderelection=3"
 
 USER 1001
-ENTRYPOINT /app/server --id=$(/app/hostname) $@
+ENTRYPOINT ["/start.sh"]
