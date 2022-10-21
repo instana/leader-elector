@@ -21,3 +21,6 @@
 Session.vim
 .netrwhist
 
+# IntelliJ
+.idea/
+*.iml
