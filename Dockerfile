@@ -6,7 +6,7 @@ ENV PATH="$PATH:/usr/local/go/bin" \
 # Needs separate ENV entry to be able to use the version defined before
 ENV GO_SHA256="e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f go${GO_VERSION}.linux-amd64.tar.gz"
 
-RUN microdnf install git tar gzip \
+RUN microdnf install git tar gzip --noplugins --setopt=install_weak_deps=0 \
     && curl -L --fail --show-error --silent "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o "go${GO_VERSION}.linux-amd64.tar.gz" \
     && echo "${GO_SHA256}" | sha256sum --check \
     && rm -rf /usr/local/go \
