@@ -131,6 +131,20 @@ resources:
     icon: docker
     source: *containers-instana-io
 
+# delivery.instana.io ##############
+  - name: leader-elector-delivery-instana-io
+    type: registry-image
+    icon: docker
+    source: &delivery-instana-io
+      repository: ((delivery-artifactory-docker-agent-release-url))
+      username: ((delivery-instana-io-release-project-artifact-read-writer-creds.username))
+      password: ((delivery-instana-io-release-project-artifact-read-writer-creds.password))
+
+  - name: manifest-delivery-instana-io
+    type: docker-manifest
+    icon: docker
+    source: *delivery-instana-io
+
 # icr.io ##############
   - name: leader-elector-icr
     type: registry-image
@@ -297,6 +311,42 @@ jobs:
             additional_tags: version/tag-ppc64le
 
       - put: manifest-instana
+        params:
+          tag_file: leader-elector-version/number
+          manifests:
+            - arch: amd64
+              os: linux
+              digest_file: leader-elector-image-amd64/digest
+            - arch: arm64
+              os: linux
+              digest_file: leader-elector-image-arm64/digest
+            - arch: s390x
+              os: linux
+              digest_file: leader-elector-image-s390x/digest
+            - arch: ppc64le
+              os: linux
+              digest_file: leader-elector-image-ppc64le/digest
+
+# delivery.instana.io ##############
+      - in_parallel:
+          - put: leader-elector-delivery-instana-io
+            params:
+              image: leader-elector-image-amd64/image.tar
+              additional_tags: version/tag-amd64
+          - put: leader-elector-delivery-instana-io
+            params:
+              image: leader-elector-image-arm64/image.tar
+              additional_tags: version/tag-arm64
+          - put: leader-elector-delivery-instana-io
+            params:
+              image: leader-elector-image-s390x/image.tar
+              additional_tags: version/tag-s390x
+          - put: leader-elector-delivery-instana-io
+            params:
+              image: leader-elector-image-ppc64le/image.tar
+              additional_tags: version/tag-ppc64le
+
+      - put: manifest-delivery-instana-io
         params:
           tag_file: leader-elector-version/number
           manifests:
