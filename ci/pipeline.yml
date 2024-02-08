@@ -117,20 +117,6 @@ resources:
     source:
       url: ((slack-webhook-team-agent.webhoook_url))
 
-# containers.instana.io ##############
-  - name: leader-elector-instana
-    type: registry-image
-    icon: docker
-    source: &containers-instana-io
-      repository: containers.instana.io/instana/release/agent/leader-elector
-      username: ((containers-instana-io-creds.username))
-      password: ((containers-instana-io-creds.password))
-
-  - name: manifest-instana
-    type: docker-manifest
-    icon: docker
-    source: *containers-instana-io
-
 # delivery.instana.io ##############
   - name: leader-elector-delivery-instana-io
     type: registry-image
@@ -290,42 +276,6 @@ jobs:
           version: version
         vars:
           version: ((.:new_leader_elector_version))
-
-# containers.instana.io ##############
-      - in_parallel:
-        - put: leader-elector-instana
-          params:
-            image: leader-elector-image-amd64/image.tar
-            additional_tags: version/tag-amd64
-        - put: leader-elector-instana
-          params:
-            image: leader-elector-image-arm64/image.tar
-            additional_tags: version/tag-arm64
-        - put: leader-elector-instana
-          params:
-            image: leader-elector-image-s390x/image.tar
-            additional_tags: version/tag-s390x
-        - put: leader-elector-instana
-          params:
-            image: leader-elector-image-ppc64le/image.tar
-            additional_tags: version/tag-ppc64le
-
-      - put: manifest-instana
-        params:
-          tag_file: leader-elector-version/number
-          manifests:
-            - arch: amd64
-              os: linux
-              digest_file: leader-elector-image-amd64/digest
-            - arch: arm64
-              os: linux
-              digest_file: leader-elector-image-arm64/digest
-            - arch: s390x
-              os: linux
-              digest_file: leader-elector-image-s390x/digest
-            - arch: ppc64le
-              os: linux
-              digest_file: leader-elector-image-ppc64le/digest
 
 # delivery.instana.io ##############
       - in_parallel:
