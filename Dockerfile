@@ -2,9 +2,9 @@ FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/ubi-minimal:latest A
 
 ENV PATH="$PATH:/usr/local/go/bin" \
     GOPATH=/go \
-    GO_VERSION=1.18
+    GO_VERSION=1.22
 # Needs separate ENV entry to be able to use the version defined before
-ENV GO_SHA256="e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f go${GO_VERSION}.linux-amd64.tar.gz"
+ENV GO_SHA256="f6c8a87aa03b92c4b0bf3d558e28ea03006eb29db78917daec5cfb6ec1046265 go${GO_VERSION}.linux-amd64.tar.gz"
 
 RUN microdnf install git tar gzip --noplugins --setopt=install_weak_deps=0 \
     && curl -L --fail --show-error --silent "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o "go${GO_VERSION}.linux-amd64.tar.gz" \
