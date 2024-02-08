@@ -2,9 +2,9 @@ FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/ubi-minimal:latest A
 
 ENV PATH="$PATH:/usr/local/go/bin" \
     GOPATH=/go \
-    GO_VERSION=1.18
+    GO_VERSION=1.21.7
 # Needs separate ENV entry to be able to use the version defined before
-ENV GO_SHA256="e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f go${GO_VERSION}.linux-amd64.tar.gz"
+ENV GO_SHA256="13b76a9b2a26823e53062fa841b07087d48ae2ef2936445dc34c4ae03293702c go${GO_VERSION}.linux-amd64.tar.gz"
 
 RUN microdnf install git tar gzip --noplugins --setopt=install_weak_deps=0 \
     && curl -L --fail --show-error --silent "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o "go${GO_VERSION}.linux-amd64.tar.gz" \
@@ -45,15 +45,18 @@ RUN cd /go/src/hostname \
     cp hostname_${ARCH} /usr/bin/linux/${ARCH}/hostname
 
 
-# Debug image includes busybox which provides a shell otherwise the containers the same.
-# Shell is needed so that shell-expansion can be used in parameters such as --id=$(/app/hostname)
-FROM gcr.io/distroless/base:debug
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 ARG TARGETPLATFORM='linux/amd64'
 
 MAINTAINER Instana Engineering <support@instana.com>
 
-# Docker defaults to /bin/sh need to override to use busybox shell.
+RUN microdnf upgrade \
+    && microdnf clean all \
+    && rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.*
+
+RUN mkdir /busybox && ln -s /usr/bin/sh /busybox/sh
+
 SHELL ["/busybox/sh", "-c"]
 
 COPY --from=hostname-builder /usr/bin/${TARGETPLATFORM}/hostname /app/hostname
